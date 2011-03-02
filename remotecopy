@@ -1,0 +1,34 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use IO::Socket;
+
+my $sock = IO::Socket::INET->new(
+    Proto => 'tcp',
+    PeerAddr => '127.0.0.1',
+    PeerPort => 12345,
+    ReuseAddr => 1,
+) or die "couldn't create socket: $!";
+
+my $data = shift;
+
+read_hello($sock);
+send_copy_data($sock, $data);
+
+sub read_hello {
+    my $sock = shift;
+
+    my $line = <$sock>;
+    print $line;
+}
+
+sub send_copy_data {
+    my ($sock, $data) = @_;
+
+    print $sock $data;
+
+    my $line = <$sock>;
+    print $line;
+}

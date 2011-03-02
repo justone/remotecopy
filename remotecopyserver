@@ -1,0 +1,37 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Data::Dumper;
+use IO::Socket;
+
+my $sock = IO::Socket::INET->new(
+    Proto     => 'tcp',
+    LocalAddr => '127.0.0.1',
+    LocalPort => 12345,
+    ReuseAddr => 1,
+    Listen    => 1
+) or die "couldn't create socket: $!";
+
+while ( my $client = $sock->accept() ) {
+
+    print $client "HELLO 0.1\n";
+
+    my $data;
+    $client->recv( $data, 4 );
+    print STDERR Dumper($data);
+
+    if ($data eq 'test') {
+        $data .= $client->recv( $data, 512 );
+    }
+    print STDERR Dumper($data);
+
+    my $pbcopy;
+    open( $pbcopy, "|pbcopy" ) or die "unable to open $!";
+    print $pbcopy $data;
+    close($pbcopy);
+
+    print $client "SUCCESS\n";
+
+    close $client;
+}
