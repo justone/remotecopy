@@ -11,4 +11,7 @@ set cpo&vim
 " TODO: support passing in a register
 command! RemoteCopy call remotecopy#docopy()
 
+" probably a better way to do this
+noremap <leader>y :RemoteCopy<CR>
+
 let &cpo = s:save_cpo
