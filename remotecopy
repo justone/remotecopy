@@ -4,6 +4,16 @@ use strict;
 use warnings;
 
 use IO::Socket;
+use Getopt::Long;
+
+my $proto_version = 1;
+
+Getopt::Long::Configure("no_auto_abbrev");
+
+my %options;
+my $opts_ok = GetOptions( \%options, 'help|?|h', 'man', 'secret|s=s', );
+
+$options{secret} ||= '';
 
 my $sock = IO::Socket::INET->new(
     Proto     => 'tcp',
@@ -30,11 +40,22 @@ sub read_hello {
     my $sock = shift;
 
     my $line = <$sock>;
-    print $line;
 }
 
 sub send_copy_data {
     my ( $sock, $data ) = @_;
 
-    print $sock $data;
+    # send authentication
+    printf $sock "%d:%s", $proto_version, $options{secret};
+
+    my $line = <$sock>;
+    if ( $line =~ /SUCCESS/ ) {
+
+        # auth successful, send copy data
+        print $sock $data;
+    }
+    elsif ( $line =~ /FAILURE AUTH/ ) {
+        print "Authentication failure.  Use -s to pass in secret.\n";
+        exit 1;
+    }
 }

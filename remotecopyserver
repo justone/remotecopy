@@ -5,6 +5,11 @@ use warnings;
 use Data::Dumper;
 use IO::Socket;
 
+my $secret = 'ubersecret';
+
+my $growlnotify_location = `/usr/bin/which growlnotify`;
+chomp $growlnotify_location;
+
 my $sock = IO::Socket::INET->new(
     Proto     => 'tcp',
     LocalAddr => '127.0.0.1',
@@ -19,21 +24,63 @@ while ( my $client = $sock->accept() ) {
 
     my $buffer;
     my $copydata;
-    $client->recv( $buffer, 4 );
+    $client->recv( $buffer, 512 );
 
-    # TODO: decide if we want to allow this paste
+    my ( $client_proto_version, $client_secret ) = split( /:/, $buffer );
+    if ( $client_proto_version == 1 ) {
+        if ( $client_secret eq $secret ) {
+            print $client "SUCCESS\n";
+        }
+        else {
+            print $client "FAILURE AUTH\n";
+            copy($secret);
+            notify(
+                "Unauthenticated copy attempt, copied secret to clipboard");
+            $client->close();
+            next;
+        }
+    }
+    else {
+        print $client "FAILURE PROTOVER\n";
+        notify(
+            sprintf( "Unknown client version %d, rejecting.",
+                $client_proto_version )
+        );
+        $client->close();
+        next;
+    }
+
+    $buffer = '';
 
     do {
         $copydata .= $buffer;
-        $client->recv( $buffer, 4 );
+        $client->recv( $buffer, 512 );
     } while ($buffer);
 
-    print STDERR "all data: $copydata\n";
+    #print STDERR "all data: $copydata\n";
+
+    copy($copydata);
+    notify("Remote copy.");
+
+    $client->close();
+}
+
+sub copy {
+    my $copydata = shift;
 
     my $pbcopy;
     open( $pbcopy, "|pbcopy" ) or die "unable to open $!";
     print $pbcopy $copydata;
     close($pbcopy);
+}
 
-    close $client;
+sub notify {
+    my $message = shift;
+
+    if ($growlnotify_location) {
+        system( $growlnotify_location, "-m", $message );
+    }
+    else {
+        print "$message\n";
+    }
 }
