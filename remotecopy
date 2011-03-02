@@ -6,16 +6,25 @@ use warnings;
 use IO::Socket;
 
 my $sock = IO::Socket::INET->new(
-    Proto => 'tcp',
-    PeerAddr => '127.0.0.1',
-    PeerPort => 12345,
+    Proto     => 'tcp',
+    PeerAddr  => '127.0.0.1',
+    PeerPort  => 12345,
     ReuseAddr => 1,
-) or die "couldn't create socket: $!";
+) or die "Unable to connect: $!.\n";
 
-my $data = shift;
+my $data;
+if ( scalar(@ARGV) ) {
+    $data = join( ' ', @ARGV );
+}
+else {
+    local $/ = undef;
+    $data = <STDIN>;
+}
 
 read_hello($sock);
-send_copy_data($sock, $data);
+send_copy_data( $sock, $data );
+
+$sock->close();
 
 sub read_hello {
     my $sock = shift;
@@ -25,10 +34,7 @@ sub read_hello {
 }
 
 sub send_copy_data {
-    my ($sock, $data) = @_;
+    my ( $sock, $data ) = @_;
 
     print $sock $data;
-
-    my $line = <$sock>;
-    print $line;
 }

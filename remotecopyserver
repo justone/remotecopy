@@ -17,21 +17,23 @@ while ( my $client = $sock->accept() ) {
 
     print $client "HELLO 0.1\n";
 
-    my $data;
-    $client->recv( $data, 4 );
-    print STDERR Dumper($data);
+    my $buffer;
+    my $copydata;
+    $client->recv( $buffer, 4 );
 
-    if ($data eq 'test') {
-        $data .= $client->recv( $data, 512 );
-    }
-    print STDERR Dumper($data);
+    # TODO: decide if we want to allow this paste
+
+    do {
+        $copydata .= $buffer;
+        $client->recv( $buffer, 4 );
+    } while ($buffer);
+
+    print STDERR "all data: $copydata\n";
 
     my $pbcopy;
     open( $pbcopy, "|pbcopy" ) or die "unable to open $!";
-    print $pbcopy $data;
+    print $pbcopy $copydata;
     close($pbcopy);
-
-    print $client "SUCCESS\n";
 
     close $client;
 }
