@@ -4,8 +4,9 @@ use strict;
 use warnings;
 use Data::Dumper;
 use IO::Socket;
+use Digest::MD5 qw(md5_hex);
 
-my $secret = 'ubersecret';
+my $secret = generate_secret();
 
 my $growlnotify_location = `/usr/bin/which growlnotify`;
 chomp $growlnotify_location;
@@ -83,4 +84,11 @@ sub notify {
     else {
         print "$message\n";
     }
+}
+
+sub generate_secret {
+    print "enter hash seed: \n";
+    my $salt = <>;
+
+    return 'rc-' . md5_hex( $salt . time );
 }
