@@ -44,8 +44,10 @@ while ( my $client = $sock->accept() ) {
     else {
         print $client "FAILURE PROTOVER\n";
         notify(
-            sprintf( "Unknown client version %d, rejecting.",
-                $client_proto_version )
+            sprintf(
+                "Unknown client version %d, rejecting.\nData: %s",
+                $client_proto_version, $buffer
+            )
         );
         $client->close();
         next;
