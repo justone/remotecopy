@@ -5,22 +5,17 @@ use warnings;
 
 use IO::Socket;
 use Getopt::Long;
+use IO::File;
 
 my $proto_version = 1;
 
 Getopt::Long::Configure("no_auto_abbrev");
 
 my %options;
-my $opts_ok = GetOptions( \%options, 'help|?|h', 'man', 'secret|s=s', );
+my $opts_ok = GetOptions( \%options, 'help|?|h', 'man', 'secret|s=s',
+    'non-interactive|n' );
 
 $options{secret} ||= '';
-
-my $sock = IO::Socket::INET->new(
-    Proto     => 'tcp',
-    PeerAddr  => '127.0.0.1',
-    PeerPort  => 12345,
-    ReuseAddr => 1,
-) or die "Unable to connect: $!.\n";
 
 my $data;
 if ( scalar(@ARGV) ) {
@@ -31,10 +26,7 @@ else {
     $data = <STDIN>;
 }
 
-read_hello($sock);
-send_copy_data( $sock, $data );
-
-$sock->close();
+send_copy_data( $data, $options{secret} );
 
 sub read_hello {
     my $sock = shift;
@@ -43,10 +35,19 @@ sub read_hello {
 }
 
 sub send_copy_data {
-    my ( $sock, $data ) = @_;
+    my ( $data, $secret ) = @_;
+
+    my $sock = IO::Socket::INET->new(
+        Proto     => 'tcp',
+        PeerAddr  => '127.0.0.1',
+        PeerPort  => 12345,
+        ReuseAddr => 1,
+    ) or die "Unable to connect: $!.\n";
+
+    read_hello($sock);
 
     # send authentication
-    printf $sock "%d:%s", $proto_version, $options{secret};
+    printf $sock "%d:%s", $proto_version, $secret;
 
     my $line = <$sock>;
     if ( $line =~ /SUCCESS/ ) {
@@ -55,7 +56,22 @@ sub send_copy_data {
         print $sock $data;
     }
     elsif ( $line =~ /FAILURE AUTH/ ) {
-        print "Authentication failure.  Use -s to pass in secret.\n";
-        exit 1;
+        if ( $options{'non-interactive'} ) {
+            print "Authentication failure.  Use -s to pass in secret.\n";
+            exit 1;
+        }
+        else {
+            my $tty = IO::File->new( '/dev/tty', 'r+' );
+
+            print $tty "Input secret:\n";
+            my $secret = <$tty>;
+            chomp($secret);
+
+            $tty->close();
+
+            send_copy_data( $data, $secret );
+        }
     }
+
+    $sock->close();
 }

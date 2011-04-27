@@ -10,7 +10,7 @@ set cpo&vim
 let s:secret = 'none'
 
 function! remotecopy#docopy()
-    let output = system("remotecopy -s ".s:secret, getreg(""))
+    let output = system("remotecopy -n -s ".s:secret, getreg(""))
     if v:shell_error
         if v:shell_error == 1
             " if it's exit code 1, then we need to reauth
