@@ -6,6 +6,7 @@ use warnings;
 use Getopt::Long;
 use IO::File;
 use IO::Socket;
+use Pod::Usage;
 
 my $proto_version = 1;
 
@@ -13,9 +14,15 @@ Getopt::Long::Configure("no_auto_abbrev");
 
 my %options;
 my $opts_ok = GetOptions( \%options, 'help|?|h', 'man', 'secret|s=s',
-    'non-interactive|n' );
+    'non-interactive|n', 'port|p=s', 'address|a=s' );
 
-$options{secret} ||= '';
+pod2usage(2) if !$opts_ok;
+pod2usage(1) if exists $options{help};
+pod2usage( -exitstatus => 0, -verbose => 2 ) if exists $options{man};
+
+my $secret = $options{secret} ||= '';
+my $address = $options{address} || '127.0.0.1';
+my $port    = $options{port}    || 12345;
 
 my $data;
 if ( scalar(@ARGV) ) {
@@ -26,7 +33,7 @@ else {
     $data = <STDIN>;
 }
 
-send_copy_data( $data, $options{secret} );
+send_copy_data( $data, $secret );
 
 sub read_hello {
     my $sock = shift;
@@ -39,8 +46,8 @@ sub send_copy_data {
 
     my $sock = IO::Socket::INET->new(
         Proto     => 'tcp',
-        PeerAddr  => '127.0.0.1',
-        PeerPort  => 12345,
+        PeerAddr  => $address,
+        PeerPort  => $port,
         ReuseAddr => 1,
     ) or die "Unable to connect: $!.\n";
 
@@ -75,3 +82,78 @@ sub send_copy_data {
 
     $sock->close();
 }
+
+__END__
+
+=head1 NAME
+
+remotecopy - send remote copy request
+
+=head1 SYNOPSIS
+
+ remotecopy [options] [datatocopy]
+
+ Options:
+  -n --non-interactive      Don't prompt for secret if not found, communicate
+                            with exit code.
+  -s --secret <secret>      Remote copy secret, as provided by the server.
+  -p --port <port>          Port to connect to (defaults to 12345).
+  -a --address <ip addr>    IP address to connect to (defaults to 127.0.0.1).
+
+ Documentation options:
+  -h --help -?              brief help message
+     --man                  full documentation
+
+=head1 REQUIRED ARGUMENTS
+
+No arguments are required.
+
+=head1 DESCRIPTION
+
+This script implements the remote end of a remote copy.  It connects to a
+remotecopyserver and sends copy data (either from stdin or an argument) after
+handshaking.
+
+=head1 EXAMPLES
+
+=head2 Copy a simple string.
+
+After the secret is entered, the data is in the server's copy buffer.
+
+ $ remotecopy foo
+ Input secret:
+ rc-b212f4522lle33a689edcca88d6845b8
+
+=head2 Copy output of another program.
+
+After the secret is entered, the data is in the server's copy buffer.
+
+ $ ls | remotecopy
+ Input secret:
+ rc-b212f4522lle33a689edcca88d6845b8
+
+=head2 Specify secret on command line
+
+No prompt is needed
+
+ $ ls | remotecopy -s rc-b212f4520c3e33a689edcca88d6845b8
+ $
+
+=head1 PROTOCOL
+
+See the documentation for remotecopyserver.
+
+=head1 AUTHOR
+
+Nate Jones E<lt>nate@endot.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2011 by Nate Jones E<lt>nate@endot.orgE<gt>.
+
+This program is free software; you can use, modify, and redistribute it under
+the Artistic License, version 2.0.
+
+See http://www.opensource.org/licenses/artistic-license-2.0.php
+
+=cut
