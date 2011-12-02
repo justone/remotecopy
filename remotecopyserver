@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Digest::MD5 qw(md5_hex);
+use File::Spec;
 use Getopt::Long;
 use IO::Socket;
 use Pod::Usage;
@@ -12,11 +13,17 @@ Getopt::Long::Configure("no_auto_abbrev");
 
 my %options;
 my $opts_ok
-    = GetOptions( \%options, 'help|?|h', 'man', 'port|p=s', 'address|a=s', );
+    = GetOptions( \%options, 'help|?|h', 'man', 'port|p=s', 'address|a=s',
+    'osx|x=s' );
 
 pod2usage(2) if !$opts_ok;
 pod2usage(1) if exists $options{help};
 pod2usage( -exitstatus => 0, -verbose => 2 ) if exists $options{man};
+
+if ( $options{osx} ) {
+    handle_osx( $options{osx} );
+    exit;
+}
 
 my $config = load_config();
 
@@ -133,6 +140,97 @@ sub load_config {
     return $config;
 }
 
+sub handle_osx {
+    my $command = shift;
+
+    my $launchagent_file
+        = "$ENV{HOME}/Library/LaunchAgents/org.endot.remotecopy.plist";
+
+    if ( $command eq 'configure' ) {
+        configure_launchagent($launchagent_file);
+    }
+    elsif ( $command eq 'unconfigure' ) {
+        unconfigure_launchagent($launchagent_file);
+    }
+    elsif ( $command eq 'start' ) {
+        configure_launchagent($launchagent_file);
+        start_launchagent($launchagent_file);
+    }
+    elsif ( $command eq 'stop' ) {
+        configure_launchagent($launchagent_file);
+        stop_launchagent($launchagent_file);
+        unconfigure_launchagent($launchagent_file);
+    }
+    elsif ( $command eq 'restart' ) {
+        configure_launchagent($launchagent_file);
+        stop_launchagent($launchagent_file);
+        start_launchagent($launchagent_file);
+    }
+    else {
+        warn "Unknown command $command.\n";
+    }
+}
+
+sub start_launchagent {
+    my $launchagent_file = shift;
+    system("/bin/launchctl list org.endot.remotecopy &> /dev/null");
+    if ( ( $? >> 8 ) != 0 ) {
+        system("/bin/launchctl load $launchagent_file");
+    }
+    else {
+        warn "remotecopyserver already running\n";
+    }
+}
+
+sub stop_launchagent {
+    my $launchagent_file = shift;
+    system("/bin/launchctl list org.endot.remotecopy &> /dev/null");
+    if ( ( $? >> 8 ) == 0 ) {
+        system("/bin/launchctl unload $launchagent_file");
+    }
+    else {
+        warn "remotecopyserver already stopped\n";
+    }
+}
+
+sub configure_launchagent {
+    my $launchagent_file = shift;
+
+    my $absolute_self_path = File::Spec->rel2abs($0);
+
+    my $contents = <<LAUNCHAGENT;
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>org.endot.remotecopy</string>
+        <key>OnDemand</key>
+        <false/>
+        <key>EnvironmentVariables</key>
+        <dict>
+            <key>PATH</key>
+            <string>/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin</string>
+        </dict>     
+        <key>ProgramArguments</key>
+        <array>
+            <string>$absolute_self_path</string>
+        </array>
+    </dict>
+</plist>
+LAUNCHAGENT
+
+    open( my $laf, '>', $launchagent_file );
+    print $laf $contents;
+    close($laf);
+}
+
+sub unconfigure_launchagent {
+    my $launchagent_file = shift;
+
+    unlink($launchagent_file);
+}
+
 __END__
 
 =head1 NAME
@@ -146,6 +244,7 @@ remotecopyserver - local daemon listening for remote copy requests
  Options:
   -p --port <port>          Port to listen on (defaults to 12345).
   -a --address <ip addr>    IP address to listen on (defaults to 127.0.0.1).
+  -x --osx <command>        OSX command.  See OSX below.
 
  Documentation options:
   -h --help -?              brief help message
@@ -160,6 +259,29 @@ No arguments are required.
 This script implements a simple daemon which listens for remote copy requests.
 It uses a minimal protocol handshake to make sure the remote end is allowed to
 send data.
+
+=head1 OSX
+
+This script can register itself as an OSX LaunchAgent to ensure that it's
+running all the time.  If the -x argument is used, one of the following four
+actions will be performed:
+
+=over 4
+
+=item start - Starts remotecopyserver via launchctl.
+
+=item stop - Stops remotecopyserver via launchctl.
+
+=item restart - Restarts remotecopyserver via launchctl.
+
+=item configure - This will configure the LaunchAgent, but not start it.
+
+=item unconfigure - This will remove the LaunchAgent configuration.
+
+=back
+
+LaunchAgents configuration files are kept in ~/Library/LaunchAgents.  For more
+information about LaunchAgents, consult the man page for launchctl and launchd.
 
 =head1 PROTOCOL
 
