@@ -18,9 +18,11 @@ pod2usage(2) if !$opts_ok;
 pod2usage(1) if exists $options{help};
 pod2usage( -exitstatus => 0, -verbose => 2 ) if exists $options{man};
 
+my $config = load_config();
+
 my $secret  = generate_secret();
-my $address = $options{address} || '127.0.0.1';
-my $port    = $options{port} || 12345;
+my $address = $config->{server_address} || $options{address} || '127.0.0.1';
+my $port    = $config->{port} || $options{port} || 12345;
 
 my $growlnotify_location = `/usr/bin/which growlnotify`;
 chomp $growlnotify_location;
@@ -111,6 +113,24 @@ sub generate_secret {
     close($urandom);
 
     return 'rc-' . md5_hex( $salt . time );
+}
+
+# same method in server and client
+sub load_config {
+    my $config_filepath = "$ENV{HOME}/.remotecopyrc";
+
+    my $config = {};
+    if ( -e $config_filepath ) {
+        open( my $config_file, '<', $config_filepath );
+        while ( my $line = <$config_file> ) {
+            chomp($line);
+            my ( $key, $option ) = $line =~ m/([\w]+)\s*=\s*(.*)/;
+            $config->{$key} = $option;
+        }
+        close($config_file);
+    }
+
+    return $config;
 }
 
 __END__
