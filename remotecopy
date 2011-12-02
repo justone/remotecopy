@@ -3,9 +3,9 @@
 use strict;
 use warnings;
 
-use IO::Socket;
 use Getopt::Long;
 use IO::File;
+use IO::Socket;
 
 my $proto_version = 1;
 

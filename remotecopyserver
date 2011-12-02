@@ -3,10 +3,9 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-use IO::Socket;
 use Digest::MD5 qw(md5_hex);
 use Getopt::Long;
+use IO::Socket;
 use Pod::Usage;
 
 Getopt::Long::Configure("no_auto_abbrev");
