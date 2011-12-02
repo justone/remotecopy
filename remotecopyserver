@@ -2,19 +2,34 @@
 
 use strict;
 use warnings;
+
 use Data::Dumper;
 use IO::Socket;
 use Digest::MD5 qw(md5_hex);
+use Getopt::Long;
+use Pod::Usage;
 
-my $secret = generate_secret();
+Getopt::Long::Configure("no_auto_abbrev");
+
+my %options;
+my $opts_ok
+    = GetOptions( \%options, 'help|?|h', 'man', 'port|p=s', 'address|a=s', );
+
+pod2usage(2) if !$opts_ok;
+pod2usage(1) if exists $options{help};
+pod2usage( -exitstatus => 0, -verbose => 2 ) if exists $options{man};
+
+my $secret  = generate_secret();
+my $address = $options{address} || '127.0.0.1';
+my $port    = $options{port} || 12345;
 
 my $growlnotify_location = `/usr/bin/which growlnotify`;
 chomp $growlnotify_location;
 
 my $sock = IO::Socket::INET->new(
     Proto     => 'tcp',
-    LocalAddr => '127.0.0.1',
-    LocalPort => 12345,
+    LocalAddr => $address,
+    LocalPort => $port,
     ReuseAddr => 1,
     Listen    => 1
 ) or die "couldn't create socket: $!";
@@ -98,3 +113,50 @@ sub generate_secret {
 
     return 'rc-' . md5_hex( $salt . time );
 }
+
+__END__
+
+=head1 NAME
+
+remotecopyserver - local daemon listening for remote copy requests
+
+=head1 SYNOPSIS
+
+ remotecopyserver [options]
+
+ Options:
+  -p --port <port>          Port to listen on (defaults to 12345).
+  -a --address <ip addr>    IP address to listen on (defaults to 127.0.0.1).
+
+ Documentation options:
+  -h --help -?              brief help message
+     --man                  full documentation
+
+=head1 REQUIRED ARGUMENTS
+
+No arguments are required.
+
+=head1 DESCRIPTION
+
+This script implements a simple daemon which listens for remote copy requests.
+It uses a minimal protocol handshake to make sure the remote end is allowed to
+send data.
+
+=head1 PROTOCOL
+
+To be documented.
+
+=head1 AUTHOR
+
+Nate Jones E<lt>nate@endot.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2011 by Nate Jones E<lt>nate@endot.orgE<gt>.
+
+This program is free software; you can use, modify, and redistribute it under
+the Artistic License, version 2.0.
+
+See http://www.opensource.org/licenses/artistic-license-2.0.php
+
+=cut
