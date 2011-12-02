@@ -165,6 +165,24 @@ send data.
 
 To be documented.
 
+=head1 RC
+
+If a ~/.remotecopyrc file is present, it will be read for options.  The file
+format is just keys and values, separated by an equals sign. Example:
+
+    server_address = 127.0.0.1
+    port = 54321
+
+The remotecopyserver will use two keys:
+
+=over 4
+
+=item server_address - IP address to listen on.
+
+=item port - Port to listen on.
+
+=back
+
 =head1 AUTHOR
 
 Nate Jones E<lt>nate@endot.orgE<gt>

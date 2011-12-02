@@ -163,6 +163,24 @@ No prompt is needed
 
 See the documentation for remotecopyserver.
 
+=head1 RC
+
+If a ~/.remotecopyrc file is present, it will be read for options.  The file
+format is just keys and values, separated by an equals sign.  Example:
+
+    client_address = 127.0.0.1
+    port = 54321
+
+remotecopy will use two keys:
+
+=over 4
+
+=item client_address - IP address to connect to.
+
+=item port - Port to connect to.
+
+=back
+
 =head1 AUTHOR
 
 Nate Jones E<lt>nate@endot.orgE<gt>
