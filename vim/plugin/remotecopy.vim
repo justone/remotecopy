@@ -8,8 +8,8 @@ let g:loaded_remotecopy = 1
 let s:save_cpo = &cpo
 set cpo&vim
 
-command RemoteCopy call remotecopy#docopy(0)
-command -range=% RemoteCopyVisual call remotecopy#docopy(1)
+command -range=% RemoteCopy call remotecopy#docopy(0, <line1>, <line2>)
+command -range=% RemoteCopyVisual call remotecopy#docopy(1, '', '')
 command RemoteCopyRegister call remotecopy#copyreg()
 
 " probably a better way to do this
