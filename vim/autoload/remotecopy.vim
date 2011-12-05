@@ -9,7 +9,7 @@ set cpo&vim
 
 let s:secret = 'none'
 
-function! remotecopy#docopy(visual)
+function! remotecopy#docopy(visual, line1, line2)
     " if it's a visual selection
     if (a:visual)
 
@@ -28,7 +28,7 @@ function! remotecopy#docopy(visual)
     else
 
         " if not visual, then just send the entire file
-        call s:rcopy(join(getline(1, '$'),"\r"))
+        call s:rcopy(join(getline(a:line1, a:line2),"\r"))
     endif
 endfunction
 
