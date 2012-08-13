@@ -14,7 +14,7 @@ Getopt::Long::Configure("no_auto_abbrev");
 
 my %options;
 my $opts_ok = GetOptions( \%options, 'help|?|h', 'man', 'secret|s=s',
-    'non-interactive|n', 'port|p=s', 'address|a=s' );
+    'non-interactive|n', 'port|p=s', 'address|a=s', 'chomp|c' );
 
 pod2usage(2) if !$opts_ok;
 pod2usage(1) if exists $options{help};
@@ -33,6 +33,11 @@ if ( scalar(@ARGV) ) {
 else {
     local $/ = undef;
     $data = <STDIN>;
+}
+
+# drop last newline if only one line (thanks merlyn)
+if ( $options{'chomp'} ) {
+    $data =~ s/^(.*)\n$/$1/;
 }
 
 send_copy_data( $data, $secret );
@@ -119,6 +124,7 @@ remotecopy - send remote copy request
   -s --secret <secret>      Remote copy secret, as provided by the server.
   -p --port <port>          Port to connect to (defaults to 12345).
   -a --address <ip addr>    IP address to connect to (defaults to 127.0.0.1).
+  -c --chomp                Chomp the last newline, if only one exists.
 
  Documentation options:
   -h --help -?              brief help message
