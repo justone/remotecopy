@@ -14,7 +14,7 @@ Getopt::Long::Configure("no_auto_abbrev");
 my %options;
 my $opts_ok
     = GetOptions( \%options, 'help|?|h', 'man', 'port|p=s', 'address|a=s',
-    'osx|x=s' );
+    'osx|x=s', 'quiet|q' );
 
 pod2usage(2) if !$opts_ok;
 pod2usage(1) if exists $options{help};
@@ -30,6 +30,7 @@ my $config = load_config();
 my $secret  = generate_secret();
 my $address = $config->{server_address} || $options{address} || '127.0.0.1';
 my $port    = $config->{port} || $options{port} || 12345;
+my $quiet   = $config->{quiet} || $options{quiet} || 0;
 
 my $growlnotify_location = `/usr/bin/which growlnotify`;
 chomp $growlnotify_location;
@@ -58,20 +59,24 @@ while ( my $client = $sock->accept() ) {
         else {
             print $client "FAILURE AUTH\n";
             copy($secret);
-            notify(
-                "Unauthenticated copy attempt, copied secret to clipboard");
+            if ( !$quiet ) {
+              notify(
+                  "Unauthenticated copy attempt, copied secret to clipboard");
+            }
             $client->close();
             next;
         }
     }
     else {
         print $client "FAILURE PROTOVER\n";
-        notify(
-            sprintf(
-                "Unknown client version %d, rejecting.\nData: %s",
-                $client_proto_version, $buffer
-            )
-        );
+        if ( !$quiet ) {
+          notify(
+              sprintf(
+                  "Unknown client version %d, rejecting.\nData: %s",
+                  $client_proto_version, $buffer
+              )
+          );
+        }
         $client->close();
         next;
     }
@@ -86,7 +91,9 @@ while ( my $client = $sock->accept() ) {
     #print STDERR "all data: $copydata\n";
 
     copy($copydata);
-    notify("Remote copy.");
+    if ( !$quiet ) { 
+      notify("Remote copy.");
+    }
 
     $client->close();
 }
@@ -245,6 +252,7 @@ remotecopyserver - local daemon listening for remote copy requests
   -p --port <port>          Port to listen on (defaults to 12345).
   -a --address <ip addr>    IP address to listen on (defaults to 127.0.0.1).
   -x --osx <command>        OSX command.  See OSX below.
+  -q --quiet                Quieter output.
 
  Documentation options:
   -h --help -?              brief help message
