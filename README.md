@@ -18,6 +18,8 @@ This project aims to address that problem with a little extra logic.  See
 
 ### Step 1. Run the remotecopyserver script on your local laptop or desktop.
 
+> NOTE: Be sure to run remotecopyserver outside of a tmux session.  Unless you've patched it to work around the [reattach-to-user-namespace](https://github.com/ChrisJohnsen/tmux-MacOSX-pasteboard) issue, remotecopyserver won't work correctly.
+
 This can either be done manually:
 
 ```
