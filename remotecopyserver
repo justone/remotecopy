@@ -102,7 +102,12 @@ sub copy {
     my $copydata = shift;
 
     my $pbcopy;
-    open( $pbcopy, "|pbcopy" ) or die "unable to open $!";
+    if ($^O eq "linux") {
+        open( $pbcopy, "|xsel --clipboard --input")
+            or die "unable to open $!";
+    } else {
+        open( $pbcopy, "|pbcopy" ) or die "unable to open $!";
+    }
     print $pbcopy $copydata;
     close($pbcopy);
 }
