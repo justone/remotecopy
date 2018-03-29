@@ -32,6 +32,10 @@ function! remotecopy#docopy(visual, line1, line2)
     endif
 endfunction
 
+function! remotecopy#setsecret(sec)
+    let s:secret = a:sec
+endfunction
+
 function! remotecopy#copyreg()
     call s:rcopy(getreg(v:register))
 endfunction
