@@ -14,7 +14,7 @@ Getopt::Long::Configure("no_auto_abbrev");
 my %options;
 my $opts_ok
     = GetOptions( \%options, 'help|?|h', 'man', 'port|p=s', 'address|a=s',
-    'osx|x=s', 'quiet|q' );
+    'osx|x=s', 'quiet|q', 'verbose' );
 
 pod2usage(2) if !$opts_ok;
 pod2usage(1) if exists $options{help};
@@ -31,6 +31,7 @@ my $secret  = generate_secret();
 my $address = $config->{server_address} || $options{address} || '127.0.0.1';
 my $port    = $config->{port} || $options{port} || 12345;
 my $quiet   = $config->{quiet} || $options{quiet} || 0;
+my $verbose = $options{verbose} || 0;
 
 my $growlnotify_location = `/usr/bin/which growlnotify`;
 chomp $growlnotify_location;
@@ -47,16 +48,21 @@ while ( my $client = $sock->accept() ) {
 
     print $client "HELLO 0.1\n";
 
+    print "received connection\n" if $verbose;
+
     my $buffer;
     my $copydata;
     $client->recv( $buffer, 512 );
 
     my ( $client_proto_version, $client_secret ) = split( /:/, $buffer );
     if ( $client_proto_version == 1 ) {
+        print "secret comparison: |$client_secret| == |$secret|\n" if $verbose;
         if ( $client_secret eq $secret ) {
+            print "auth successful\n" if $verbose;
             print $client "SUCCESS\n";
         }
         else {
+            print "auth failure, copying secret to clipboard\n" if $verbose;
             print $client "FAILURE AUTH\n";
             copy($secret);
             if ( !$quiet ) {
@@ -68,6 +74,7 @@ while ( my $client = $sock->accept() ) {
         }
     }
     else {
+        print "protocol failure\n" if $verbose;
         print $client "FAILURE PROTOVER\n";
         if ( !$quiet ) {
           notify(
@@ -83,18 +90,23 @@ while ( my $client = $sock->accept() ) {
 
     $buffer = '';
 
+    print "reading data..." if $verbose;
     do {
         $copydata .= $buffer;
         $client->recv( $buffer, 512 );
     } while ($buffer);
+    print sprintf("done, read %d bytes\n", length($copydata)) if $verbose;
 
     #print STDERR "all data: $copydata\n";
 
+    print "copying data to clipboard..." if $verbose;
     copy($copydata);
-    if ( !$quiet ) { 
+    if ( !$quiet ) {
       notify("Remote copy.");
     }
+    print "done\n" if $verbose;
 
+    print "connection complete\n" if $verbose;
     $client->close();
 }
 
@@ -223,7 +235,7 @@ sub configure_launchagent {
         <dict>
             <key>PATH</key>
             <string>/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin</string>
-        </dict>     
+        </dict>
         <key>ProgramArguments</key>
         <array>
             <string>$absolute_self_path</string>
