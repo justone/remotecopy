@@ -56,7 +56,7 @@ while ( my $client = $sock->accept() ) {
 
     my ( $client_proto_version, $client_secret ) = split( /:/, $buffer );
     if ( $client_proto_version == 1 ) {
-        print "secret comparison: |$client_secret| == |$secret|\n" if $verbose;
+        print sprintf("secret comparison: |%s...| == |%s...|\n", substr($client_secret, 0, 10), substr($secret, 0, 10)) if $verbose;
         if ( $client_secret eq $secret ) {
             print "auth successful\n" if $verbose;
             print $client "SUCCESS\n";
