@@ -91,6 +91,10 @@ Note: this file should be present on both ends so that they agree on the port.
 This is easy if you manage your dotfiles with git.  I suggest using
 [dfm](https://github.com/justone/dfm), and here is a [starter repository](https://github.com/justone/dotfiles).
 
+## Vim plugin
+
+To remotecopy bits of text from your remote Vim sessions, check out [remotecopy-vim](https://github.com/justone/remotecopy-vim).
+
 ## More information
 
 First, there's the [introductory blog post](http://endot.org/2011/12/04/remotecopy-copy-from-remote-terminals-into-your-local-clipboard/), and then a [follow up a while later](http://endot.org/2013/06/09/remotecopy-two-years-later/).
